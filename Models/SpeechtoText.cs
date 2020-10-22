@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 
 namespace Models
 {
-    class SpeechtoText
+    public class SpeechtoText
     {
+        public string Final_Result { get; set; }
+        public string Interim_Result { get; set; }
     }
 }
