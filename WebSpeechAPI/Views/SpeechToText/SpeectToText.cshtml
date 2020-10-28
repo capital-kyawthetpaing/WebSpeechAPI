@@ -11,38 +11,8 @@
         font-family: Verdana, Arial, sans-serif;
     }
 
-    a:link {
-        color: #000;
-        text-decoration: none;
-    }
-
-    a:visited {
-        color: #000;
-    }
-
-    a:hover {
-        color: #33F;
-    }
-
-    .button {
-        background-color: transparent;
-        background: -webkit-linear-gradient(top,#008dfd 0,#0370ea 100%);
-        border: 1px solid #076bd2;
-        border-radius: 3px;
-        color: #fff;
-        display: none;
-        font-size: 13px;
-        font-weight: bold;
-        line-height: 1.3;
-        padding: 8px 25px;
-        text-align: center;
-        text-shadow: 1px 1px 1px #076bd2;
-        letter-spacing: normal;
-    }
-
-    .center {
-        padding: 10px;
-        text-align: center;
+    tr td{
+        padding: 3px 5px;
     }
 
     .final {
@@ -52,30 +22,6 @@
 
     .interim {
         color: gray;
-    }
-
-    .info {
-        font-size: 14px;
-        text-align: center;
-        color: #777;
-        display: none;
-    }
-
-    .right {
-        float: right;
-    }
-
-    .sidebyside {
-        display: inline-block;
-        width: 45%;
-        min-height: 40px;
-        text-align: left;
-        vertical-align: top;
-    }
-
-    #headline {
-        font-size: 40px;
-        font-weight: 300;
     }
 
     #info {
@@ -93,9 +39,14 @@
         text-align: left;
         min-height: 150px;
     }
-
-    button {
+    button{
         background-color: transparent;
+    }
+    a img {
+        padding: 1px 6px;
+        border-width: 2px;
+        border-style: outset;
+        border-image: initial;
     }
 </style>
 
@@ -106,12 +57,9 @@
                 <tbody>
                     <tr>
                         <!-- logo -->
-                        <td class="text-center pc" id="logo-area">
-                            <p class="logo">
-                                <a href="/" draggable="false"><h2>Speech To Text</h2></a><br>
-                            </p>
+                        <td class="text-center pc" id="logo-area" nowrap="">
+                            <a href="/" draggable="false"><h2>Speech To Text</h2></a><br>
                         </td>
-                        <td class="td-dummy pc"></td>
                         <!-- Btn Area -->
                         <td id="btn-area" nowrap="">
                             <button id="btnStart" onclick="startButton(event)">
@@ -121,36 +69,23 @@
                                 <img src="/images/upload.png" alt="音声ファイル呼出し" draggable="false">
                             </button>
                             <button id="btnStop" onclick="stopButton(event)">
-                                <img id="imgStop" src="/images/stop_disabled.png" alt="音声ファイル呼出し" draggable="false" style="width:50px;height:50px;">
+                                <img id="imgStop" src="/images/stop_disabled.png" alt="停止" draggable="false" style="width:50px;height:50px;">
                             </button>
                             <button id="btnSave">
                                 <img src="/images/download.png" alt="音声ファイル保存" draggable="false">
                             </button>
+                            <a href="#" id="btnDownloadMP3" download>
+                                <img src="/images/mp3_download.png" alt="音声ファイル保存" draggable="false">
+                            </a>
                         </td>
                         <!-- Play control -->
                         <td id="play-control" class="pc">
-                            <table>
-                                <tbody>
-                                    <tr>
-                                        <td>
-                                            <audio controls style="display:none;"></audio>
-                                            <audio id="adioPlay" controls></audio>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="5" id="td-audio-file-name"><p id="audio-file-name">&nbsp;</p></td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <audio controls style="display:none;"></audio>
+                            <audio id="adioPlay" controls type="audio/mpeg">
+                                <source id="audioSource" />
+                            </audio>
                         </td>
-                        <!-- Equalizer -->
-                        <td id="equalizer" class="pc">
-                            <canvas id="canvas"></canvas>
-                        </td>
-                        <td style="width:20%;min-width:4%">&nbsp;</td>
-                        <td id="signup-area">
-                            <a href="#" id="signup" alt="本登録" draggable="false">&nbsp;</a>
-                        </td>
+                        <td colspan="5" id="td-audio-file-name"><p id="audio-file-name">&nbsp;</p></td>
                     </tr>
                 </tbody>
             </table>
@@ -161,7 +96,7 @@
             <span style="font-weight: bold;">Language Types :</span>
             <select id="select_language"></select>
         </div>
-        <input type="file" id="upFile" style="display: none;" name="uploadFile" accept=".wma, .mp3" />
+        <input type="file" id="upFile" style="display: none;" name="uploadFile" accept=".mp3" />
     </div>
     <div id="info">
         <p id="info_start">Click on the microphone icon and begin speaking.</p>
@@ -218,18 +153,17 @@
                     };
 
                     stream.ondataavailable = function (ev) {
-                        debugger;
                         dataArray.push(ev.data);
                     }
 
                     let dataArray = [];
                     stream.onstop = function (ev) {
-                        debugger;
                         let playAudio = document.getElementById('adioPlay'); 
                         let audioData = new Blob(dataArray, { 'type': 'audio/mp3;' });
                         dataArray = [];
                         let audioSrc = window.URL.createObjectURL(audioData);
                         playAudio.src = audioSrc;
+                        $("#btnDownloadMP3").attr("href", audioSrc);
                     }
                 })
                 .catch(function (err) {
@@ -237,13 +171,44 @@
                 });
 
             $("#btnStop").attr("disabled", "disabled");
+            $("#btnDownloadMP3").attr("href", "javascript: void(0)");
             $("#btnSave").click(function () {
                 if (recognizing) {
                     recognizing = false;
                     recognition.stop();
                 }
-                downloadToFile($("#final_span").text(), 'ResultFile.txt', 'text/plain');
+                downloadToFile($("#final_span").text(), 'ResultFile.docx', 'text/plain');
             });
+
+            $("#upFile").change(function () {
+                var fileName = $("#upFile").val().split("\\");
+                var formData = new FormData();
+                formData.append("fileName", fileName[fileName.length - 1]);
+                formData.append("file", $("#upFile")[0].files[0]);
+                $.ajax({
+                    url: '/api/SpeechToTextAPI/Upload_AudioFile',
+                    type: 'post',
+                    data: formData,
+                    contentType: false, // Not to set any content header
+                    processData: false, // Not to process data
+                    async: false,
+                    success: function (data) {
+                        debugger;
+                        let audio1 = document.querySelector('audio');
+                        var audio = $("#adioPlay");
+                        let audioData = new Blob([data], { 'type': 'audio/mp3;' });
+                        let audioSrc = window.URL.createObjectURL(audioData);
+                        audio[0].src = '/UploadedAudioFiles/' + data;
+                        audio[0].load();
+                        startProcess();
+                        audio[0].play();
+                    },
+                    error: function (xhr, textStatus, errorThrown) {
+                        alert('Error');
+                    }
+                });
+            });
+
         })
 
         var langs =
@@ -376,6 +341,10 @@
         }
 
         function startButton(event) {
+            startProcess();
+            stream.start();
+        }
+        function startProcess() {
             final_transcript = '';
             recognition.lang = select_language.value;
             recognition.start();
@@ -389,11 +358,14 @@
             start_timestamp = event.timeStamp;
             $("#btnStop").removeAttr("disabled");
             $("#btnStart").attr("disabled", "disabled");
-            stream.start();
+            $("#btnDownloadMP3").attr("href", "javascript: void(0)");
         }
 
         function stopButton(event) {
-            stream.stop();
+            debugger;
+            if (stream.state !== "inactive") {
+                stream.stop();
+            }
             if (recognizing) {
                 recognition.stop();
             }
@@ -435,9 +407,6 @@
             URL.revokeObjectURL(a.href);
         };
 
-        function RecordAudio(mediaStreamObj) {
-            debugger;
-        }
     </script>
 }
 
