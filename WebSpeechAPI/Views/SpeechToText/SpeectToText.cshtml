@@ -10,6 +10,7 @@
     * {
         font-family: Verdana, Arial, sans-serif;
     }
+    .alert{ margin-bottom: 0px;}
 
     tr td{
         padding: 3px 5px;
@@ -21,6 +22,7 @@
     }
 
     .interim {
+        padding-bottom: 10px;
         color: gray;
     }
 
@@ -57,8 +59,8 @@
                 <tbody>
                     <tr>
                         <!-- logo -->
-                        <td class="text-center pc" id="logo-area" nowrap="">
-                            <a href="/" draggable="false"><h2>Speech To Text</h2></a><br>
+                        <td id="logo-area" nowrap="">
+                            <h2 class="alert alert-info"><strong>Speech To Text</strong></h2><br>
                         </td>
                         <!-- Btn Area -->
                         <td id="btn-area" nowrap="">
@@ -126,9 +128,10 @@
         </p>
     </div>
     <div id="results">
-        <span id="final_span" class="final"></span>
+        @*<span id="final_span" class="final"></span>*@
         <span id="interim_span" class="interim"></span>
         <p>
+        @Html.TextAreaFor(x => x.final_result, new { @id = "txtFinal_Result", @class = "form-control", @style = "max-width:100%", @rows = "19"})
     </div>
 </div>
 
@@ -175,9 +178,9 @@
             $("#btnSave").click(function () {
                 if (recognizing) {
                     recognizing = false;
-                    recognition.stop();
+                    stopProcess();
                 }
-                downloadToFile($("#final_span").text(), 'ResultFile.docx', 'text/plain');
+                downloadToFile($("#txtFinal_Result").val(), 'ResultFile.docx', 'text/plain');
             });
 
             $("#upFile").change(function () {
@@ -189,11 +192,10 @@
                     url: '/api/SpeechToTextAPI/Upload_AudioFile',
                     type: 'post',
                     data: formData,
-                    contentType: false, // Not to set any content header
-                    processData: false, // Not to process data
+                    contentType: false,
+                    processData: false,
                     async: false,
                     success: function (data) {
-                        debugger;
                         let audio1 = document.querySelector('audio');
                         var audio = $("#adioPlay");
                         let audioData = new Blob([data], { 'type': 'audio/mp3;' });
@@ -209,6 +211,26 @@
                 });
             });
 
+            $('#txtFinal_Result').change(function () {
+                var formData = new FormData();
+                formData.append("fileName", $("#txtFinal_Result").val());
+                if ($('#txtFinal_Result').val()) {
+                    $.ajax({
+                        type: "POST",
+                        url: "/api/SpeechToTextAPI/Upload_AudioFile",
+                        data: formData,
+                        contentType: false,
+                        processData: false,
+                        async: false,
+                        success: function (data) {
+                            $("#txtFinal_Result").val(data);
+                        },
+                        error: function (xhr, textStatus, errorThrown) {
+                            alert('Error');
+                        },
+                    });
+                };
+            });
         })
 
         var langs =
@@ -219,7 +241,7 @@
         for (var i = 0; i < langs.length; i++) {
             select_language.options.add(new Option(langs[i][0], langs[i][1]));
         }
-        select_language.selectedIndex = 0;
+        select_language.selectedIndex = 2;
         showInfo('info_start');
 
         var create_email = false;
@@ -276,7 +298,8 @@
                 if (window.getSelection) {
                     window.getSelection().removeAllRanges();
                     var range = document.createRange();
-                    range.selectNode(document.getElementById('final_span'));
+                    //range.selectNode(document.getElementById('final_span'));
+                    range.selectNode(document.getElementById('txtFinal_Result'));
                     window.getSelection().addRange(range);
                 }
                 if (create_email) {
@@ -295,11 +318,13 @@
                     }
                 }
                 final_transcript = capitalize(final_transcript);
-                final_span.innerHTML = linebreak(final_transcript);
+                //final_span.innerHTML = linebreak(final_transcript);
+                txtFinal_Result.value = linebreak(final_transcript);
                 interim_span.innerHTML = linebreak(interim_transcript);
                 if (final_transcript || interim_transcript) {
                     showButtons('inline-block');
                 }
+                $("#txtFinal_Result").change();
             };
         }
 
@@ -319,26 +344,26 @@
             return s.replace(first_char, function (m) { return m.toUpperCase(); });
         }
 
-        function createEmail() {
-            var n = final_transcript.indexOf('\n');
-            if (n < 0 || n >= 80) {
-                n = 40 + final_transcript.substring(40).indexOf(' ');
-            }
-            var subject = encodeURI(final_transcript.substring(0, n));
-            var body = encodeURI(final_transcript.substring(n + 1));
-            window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
-        }
+        //function createEmail() {
+        //    var n = final_transcript.indexOf('\n');
+        //    if (n < 0 || n >= 80) {
+        //        n = 40 + final_transcript.substring(40).indexOf(' ');
+        //    }
+        //    var subject = encodeURI(final_transcript.substring(0, n));
+        //    var body = encodeURI(final_transcript.substring(n + 1));
+        //    window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
+        //}
 
-        function emailButton() {
-            if (recognizing) {
-                create_email = true;
-                recognizing = false;
-                recognition.stop();
-            } else {
-                createEmail();
-            }
-            showInfo('');
-        }
+        //function emailButton() {
+        //    if (recognizing) {
+        //        create_email = true;
+        //        recognizing = false;
+        //        recognition.stop();
+        //    } else {
+        //        createEmail();
+        //    }
+        //    showInfo('');
+        //}
 
         function startButton(event) {
             startProcess();
@@ -349,7 +374,8 @@
             recognition.lang = select_language.value;
             recognition.start();
             ignore_onend = false;
-            final_span.innerHTML = '';
+            //final_span.innerHTML = '';
+            txtFinal_Result.value = '';
             interim_span.innerHTML = '';
             imgStart.src = '/images/mic-slash.gif';
             imgStop.src = '/images/stop_enabled.gif'
@@ -358,11 +384,14 @@
             start_timestamp = event.timeStamp;
             $("#btnStop").removeAttr("disabled");
             $("#btnStart").attr("disabled", "disabled");
+            $("#btnUpload").attr("disabled", "disabled");
             $("#btnDownloadMP3").attr("href", "javascript: void(0)");
         }
 
         function stopButton(event) {
-            debugger;
+            stopProcess();
+        }
+        function stopProcess() {
             if (stream.state !== "inactive") {
                 stream.stop();
             }
@@ -370,6 +399,7 @@
                 recognition.stop();
             }
             $("#btnStart").removeAttr("disabled");
+            $("#btnUpload").removeAttr("disabled");
             imgStart.src = '/images/mic.gif'
             $("#btnStop").attr("disabled", "disabled");
             imgStop.src = '/images/stop_disabled.png';

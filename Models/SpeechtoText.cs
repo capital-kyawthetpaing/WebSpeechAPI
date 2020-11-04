@@ -8,7 +8,6 @@ namespace Models
 {
     public class SpeechtoText
     {
-        public string Final_Result { get; set; }
-        public string Interim_Result { get; set; }
+        public string final_result { get; set; }
     }
 }
